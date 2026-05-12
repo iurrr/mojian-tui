@@ -2,28 +2,6 @@
 
 一个零依赖的终端文字创作软件，使用 TypeScript 和 Node.js 的原生终端能力实现。
 
-## 环境要求
-
-- Node.js `>=24`
-
-## 运行
-
-```bash
-npm start
-```
-
-也可以指定草稿库目录：
-
-```bash
-npm start -- --dir ./drafts
-```
-
-也可以直接运行入口：
-
-```bash
-node src/main.ts
-```
-
 ## 功能
 
 - TUI 双栏界面：左侧写作编辑区，右侧草稿列表
@@ -39,6 +17,30 @@ node src/main.ts
 - 搜索正文、导出 Markdown
 - 屏幕左下角固定显示当前字数和上次保存时间，底栏显示词数、段落数和光标位置
 - 专注模式，可隐藏草稿栏
+
+## 环境要求
+
+- Node.js `>=24`
+
+## 使用
+
+克隆项目后，在项目目录运行：
+
+```bash
+npm start
+```
+
+也可以指定草稿库目录：
+
+```bash
+npm start -- --dir ./drafts
+```
+
+或者直接运行入口文件：
+
+```bash
+node src/main.ts
+```
 
 ## 快捷键
 
@@ -62,31 +64,12 @@ node src/main.ts
 
 右侧草稿栏激活后，可用 `Up/Down` 选择草稿，`Enter` 打开草稿，`Esc` 返回编辑区。
 
-草稿默认保存在运行命令时所在的当前工作目录，格式为 `.txt`；导出时默认使用当前工作目录，并生成 `.md` 文件。
+## 文件保存
 
-## 测试
+草稿默认保存在运行命令时所在的当前工作目录，格式为 `.txt`。
 
-```bash
-npm test
-```
+导出时默认使用当前工作目录，并生成 `.md` 文件。
 
-完整检查：
+## 许可证
 
-```bash
-npm run ci
-```
-
-## 项目结构
-
-```text
-src/main.ts              # TUI 主程序
-test/writer_tui.test.ts  # 核心逻辑测试
-README.md                # 使用说明
-CHANGELOG.md             # 版本记录
-LICENSE                  # MIT 许可证
-docs/PUBLISHING.md       # GitHub 发布步骤
-```
-
-## 发布
-
-发布到 GitHub 的步骤见 [docs/PUBLISHING.md](docs/PUBLISHING.md)。
+本项目使用 MIT 许可证。
