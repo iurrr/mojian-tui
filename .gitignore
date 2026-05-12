@@ -3,6 +3,7 @@ dist/
 coverage/
 *.log
 *.tgz
+*.deb
 .DS_Store
 
 # Local writing drafts and app state created while running the TUI.
@@ -13,3 +14,7 @@ coverage/
 
 # Existing local demo page unrelated to the TUI package.
 /index.html
+
+# Local Debian package build output.
+/package/
+/mojian

@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Document, EditorState, WriterTui, displayWidth, fitText, wrapLineRanges } from "../src/main.ts";
+import { Document, EditorState, WriterTui, displayWidth, fitText, parseArgs, wrapLineRanges } from "../src/main.ts";
 
 function assert(condition: unknown, message: string): void {
   if (!condition) {
@@ -34,6 +34,24 @@ function testDocumentRoundTrip(): void {
   });
 }
 
+function testCliArgParsing(): void {
+  const version = parseArgs(["-v"]);
+  assert(version.version === true, "-v 应解析为版本查询");
+  assert(version.help === false, "-v 不应同时解析为帮助");
+
+  const help = parseArgs(["--help"]);
+  assert(help.help === true, "--help 应解析为帮助");
+
+  const file = parseArgs(["./notes.txt"]);
+  assert(file.filePath === "./notes.txt", "位置参数应解析为文件路径");
+
+  const dir = parseArgs(["--dir", "./drafts"]);
+  assert(dir.dir === "./drafts", "--dir 应解析草稿目录");
+
+  const unknown = parseArgs(["--unknown"]);
+  assert(Boolean(unknown.error), "未知参数应返回错误");
+}
+
 function testLegacyDocumentReadCompatibility(): void {
   withTempDir((dir) => {
     const path = join(dir, "legacy.mojian.json");
@@ -43,6 +61,27 @@ function testLegacyDocumentReadCompatibility(): void {
     const loaded = Document.load(path);
     assert(loaded.title === "旧草稿", "旧 JSON 草稿标题读取失败");
     assert(loaded.content === "旧内容", "旧 JSON 草稿内容读取失败");
+  });
+}
+
+function testOpenSpecificFileKeepsPathOnSave(): void {
+  withTempDir((dir) => {
+    const path = join(dir, "我的 笔记.md");
+    writeFileSync(path, "旧内容", "utf8");
+
+    const tui = new WriterTui({ filePath: path });
+    tui.loadLibrary();
+
+    assert(tui.doc.path === path, "指定文件路径应成为当前文档");
+    assert(tui.doc.title === "我的 笔记", "指定文件标题应从文件名读取");
+    assert(tui.editor.toText() === "旧内容", "指定文件内容应被读取");
+
+    tui.editor.insertText("\n新内容");
+    tui.markDirty();
+    tui.saveToDirectory(dir, false);
+
+    assert(tui.doc.path === path, "保存指定文件时不应自动改名");
+    assert(readFileSync(path, "utf8") === "\n新内容旧内容", "指定文件应原路径保存");
   });
 }
 
@@ -208,7 +247,9 @@ function testLastSaveTimeDisplayUpdatesAfterSave(): void {
 }
 
 testDocumentRoundTrip();
+testCliArgParsing();
 testLegacyDocumentReadCompatibility();
+testOpenSpecificFileKeepsPathOnSave();
 testEditorInsertDeleteAndJoin();
 testWideCharacterLayoutHelpers();
 testSaveAndExportDirectories();

@@ -15,7 +15,7 @@ npm pack --dry-run
 
 ```bash
 git init
-git add README.md LICENSE CHANGELOG.md package.json .gitignore src test docs .github
+git add README.md LICENSE CHANGELOG.md package.json .gitignore bin src test docs .github
 git commit -m "Initial release"
 ```
 
@@ -42,6 +42,12 @@ git push -u origin main
 - Tag: `v1.0.0`
 - Title: `墨笺 TUI 1.0.0`
 - Notes: 可以复制 `CHANGELOG.md` 中的 `1.0.0` 内容
+
+`.deb`、裸二进制等构建产物不要提交到 Git 仓库；将它们作为 Release 附件上传。例如当前 ARM64 安装包：
+
+```bash
+gh release upload v1.0.0 mojian_1.0.0_arm64.deb --repo iurrr/mojian-tui
+```
 
 ## 可选：发布到 npm
 

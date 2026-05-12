@@ -22,24 +22,64 @@
 
 - Node.js `>=24`
 
-## 使用
+## 安装
 
-克隆项目后，在项目目录运行：
+Linux ARM64 用户可以在 [Releases](https://github.com/iurrr/mojian-tui/releases) 下载 `.deb` 安装包：
+
+```bash
+sudo apt install ./mojian_1.0.0_arm64.deb
+```
+
+安装后即可使用 `mojian` 命令。
+
+也可以从源码运行。克隆项目后，在项目目录执行：
 
 ```bash
 npm start
 ```
 
-也可以指定草稿库目录：
+如果希望像普通终端程序一样输入 `mojian` 打开，可以在项目目录安装到本机：
 
 ```bash
-npm start -- --dir ./drafts
+npm install -g .
+```
+
+## 使用
+
+打开当前目录的草稿库：
+
+```bash
+mojian
+```
+
+查看版本号：
+
+```bash
+mojian -v
+```
+
+打开或创建指定文件：
+
+```bash
+mojian ./notes.txt
+```
+
+指定草稿库目录：
+
+```bash
+mojian --dir ./drafts
+```
+
+未全局安装时，也可以通过 npm 脚本运行：
+
+```bash
+npm start -- ./notes.txt
 ```
 
 或者直接运行入口文件：
 
 ```bash
-node src/main.ts
+node src/main.ts ./notes.txt
 ```
 
 ## 快捷键

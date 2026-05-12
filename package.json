@@ -5,9 +5,10 @@
   "private": true,
   "type": "module",
   "bin": {
-    "mojian": "./src/main.ts"
+    "mojian": "./bin/mojian"
   },
   "files": [
+    "bin/",
     "src/",
     "docs/",
     "README.md",

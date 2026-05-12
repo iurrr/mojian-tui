@@ -49,6 +49,20 @@ type VisualLine = {
   end: number;
 };
 
+export type WriterTuiOptions = {
+  library?: string;
+  filePath?: string;
+  showStartupHelp?: boolean;
+};
+
+export type CliArgs = {
+  help: boolean;
+  version: boolean;
+  dir: string;
+  filePath: string | null;
+  error: string | null;
+};
+
 export function charLength(text: string): number {
   return Array.from(text).length;
 }
@@ -128,6 +142,20 @@ function expandUserPath(path: string): string {
 function resolveDirectory(input: string, fallback: string): string {
   const raw = input.trim() || fallback;
   return resolve(expandUserPath(raw));
+}
+
+function resolveFilePath(input: string): string {
+  return resolve(expandUserPath(input));
+}
+
+export function getPackageVersion(): string {
+  try {
+    const raw = readFileSync(new URL("../package.json", import.meta.url), "utf8");
+    const data = JSON.parse(raw) as { version?: string };
+    return data.version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
 }
 
 function move(row: number, col: number): string {
@@ -328,6 +356,8 @@ export class WriterTui {
   library: string;
   saveDir: string;
   exportDir: string;
+  initialFilePath: string | null = null;
+  showStartupHelp = false;
   documents: Document[] = [];
   currentIndex = 0;
   doc: Document = new Document(join(process.cwd(), `untitled${DRAFT_SUFFIX}`), "未命名草稿");
@@ -347,10 +377,15 @@ export class WriterTui {
   autosaveTimer: ReturnType<typeof setInterval> | null = null;
   keyHandler: ((str: string, key: Key) => void) | null = null;
 
-  constructor(library = process.cwd()) {
-    this.library = resolveDirectory(library, process.cwd());
+  constructor(input: string | WriterTuiOptions = process.cwd()) {
+    const options = typeof input === "string" ? { library: input } : input;
+    this.initialFilePath = options.filePath ? resolveFilePath(options.filePath) : null;
+    this.library = this.initialFilePath
+      ? dirname(this.initialFilePath)
+      : resolveDirectory(options.library || process.cwd(), process.cwd());
     this.saveDir = this.library;
     this.exportDir = process.cwd();
+    this.showStartupHelp = Boolean(options.showStartupHelp);
   }
 
   run(): void {
@@ -362,6 +397,10 @@ export class WriterTui {
 
     this.running = true;
     this.loadLibrary();
+    if (this.showStartupHelp) {
+      this.helpVisible = true;
+      this.status = "按任意键关闭说明，Ctrl+H 可随时重新打开";
+    }
     this.enterScreen();
     readline.emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
@@ -419,6 +458,19 @@ export class WriterTui {
       .filter((file) => file.endsWith(DRAFT_SUFFIX) || file.endsWith(LEGACY_DRAFT_SUFFIX))
       .map((file) => join(this.library, file))
       .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
+
+    if (this.initialFilePath) {
+      if (!files.some((file) => resolve(file) === resolve(this.initialFilePath || ""))) {
+        files.unshift(this.initialFilePath);
+      }
+      this.documents = files.map((path) => Document.load(path));
+      const index = this.documents.findIndex((item) => resolve(item.path) === resolve(this.initialFilePath || ""));
+      this.openDocument(index >= 0 ? index : 0);
+      this.sidebarIndex = this.currentIndex;
+      this.sidebarTop = 0;
+      return;
+    }
+
     this.documents = files.map((path) => Document.load(path));
     if (this.documents.length === 0) {
       const first = new Document(uniqueDraftPath(this.library, "未命名草稿"), "未命名草稿");
@@ -437,6 +489,9 @@ export class WriterTui {
       .filter((file) => file.endsWith(DRAFT_SUFFIX) || file.endsWith(LEGACY_DRAFT_SUFFIX))
       .map((file) => join(this.library, file))
       .sort((left, right) => statSync(right).mtimeMs - statSync(left).mtimeMs);
+    if (!files.some((item) => resolve(item) === resolve(path))) {
+      files.unshift(path);
+    }
     this.documents = files.map((item) => Document.load(item));
     const index = this.documents.findIndex((item) => item.path === path);
     this.currentIndex = Math.max(0, index);
@@ -645,12 +700,16 @@ export class WriterTui {
   }
 
   drawHelp(height: number, width: number): string {
-    const boxHeight = Math.min(20, height - 2);
+    const boxHeight = Math.min(23, height - 2);
     const boxWidth = Math.min(76, width - 4);
     const top = Math.floor((height - boxHeight) / 2) + 1;
     const left = Math.floor((width - boxWidth) / 2) + 1;
     const lines = [
-      `${APP_NAME} 快捷键`,
+      `${APP_NAME} 使用说明`,
+      "",
+      "命令：mojian 打开草稿库",
+      "      mojian 文件路径  打开或创建指定文件",
+      "      mojian -v        查看版本号",
       "",
       "Ctrl+S 保存，并可输入保存目录",
       "Ctrl+Q 保存并退出",
@@ -1142,11 +1201,13 @@ export class WriterTui {
       const previousDirectory = resolve(dirname(previousPath));
       const currentStem = basename(previousPath, extname(previousPath));
       const titleStem = slugify(this.doc.title);
+      const isLegacyDraft = previousPath.endsWith(LEGACY_DRAFT_SUFFIX);
+      const isTxtDraft = previousPath.endsWith(DRAFT_SUFFIX);
       const renameWithinDirectory =
-        previousDirectory === directory && previousPath.endsWith(DRAFT_SUFFIX) && currentStem !== titleStem;
-      const shouldChoosePath = previousDirectory !== directory || !previousPath.endsWith(DRAFT_SUFFIX) || renameWithinDirectory;
+        previousDirectory === directory && isTxtDraft && currentStem !== titleStem;
+      const shouldChoosePath = previousDirectory !== directory || isLegacyDraft || renameWithinDirectory;
       if (shouldChoosePath) {
-        this.doc.path = uniqueDraftPath(directory, this.doc.title, previousPath.endsWith(DRAFT_SUFFIX) ? previousPath : undefined);
+        this.doc.path = uniqueDraftPath(directory, this.doc.title, isTxtDraft ? previousPath : undefined);
       }
       this.doc.save();
       if (renameWithinDirectory && previousPath !== this.doc.path && existsSync(previousPath)) {
@@ -1277,43 +1338,95 @@ export class WriterTui {
   }
 }
 
-function usage(): string {
+export function usage(): string {
   return [
     "用法：",
-    "  node src/main.ts [--dir 目录]",
-    "  node src/main.ts --help",
+    "  mojian",
+    "  mojian <文件路径>",
+    "  mojian --dir <目录>",
+    "  mojian -v",
+    "  mojian --help",
     "",
     "说明：",
-    "  --dir, --library  草稿保存目录，默认当前工作目录。",
+    "  不带参数时打开当前目录的草稿库，并在主界面显示使用说明。",
+    "  指定文件路径时，打开或创建该文件。",
+    "  --dir, --library  指定草稿保存目录，默认当前工作目录。",
+    "  -v, --version     显示版本号。",
     "",
     "示例：",
-    "  node src/main.ts",
-    "  node src/main.ts --dir ./drafts",
+    "  mojian",
+    "  mojian ./notes.txt",
+    "  mojian --dir ./drafts",
   ].join("\n");
 }
 
-function parseArgs(argv: string[]): { help: boolean; dir: string } {
+export function parseArgs(argv: string[]): CliArgs {
   let dir = process.cwd();
   let help = false;
+  let version = false;
+  let filePath: string | null = null;
+  let error: string | null = null;
+  let positionalOnly = false;
+
+  const takeFilePath = (value: string): void => {
+    if (filePath) {
+      error ||= `一次只能打开一个文件：${value}`;
+      return;
+    }
+    filePath = value;
+  };
+
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === "-h" || arg === "--help") {
+    if (positionalOnly) {
+      takeFilePath(arg);
+    } else if (arg === "--") {
+      positionalOnly = true;
+    } else if (arg === "-h" || arg === "--help") {
       help = true;
+    } else if (arg === "-v" || arg === "--version") {
+      version = true;
     } else if (arg === "--dir" || arg === "--library") {
-      dir = argv[index + 1] || process.cwd();
+      if (!argv[index + 1]) {
+        error ||= `${arg} 需要提供目录。`;
+      } else {
+        dir = argv[index + 1];
+      }
       index += 1;
+    } else if (arg.startsWith("--dir=")) {
+      dir = arg.slice("--dir=".length) || process.cwd();
+    } else if (arg.startsWith("--library=")) {
+      dir = arg.slice("--library=".length) || process.cwd();
+    } else if (arg.startsWith("-")) {
+      error ||= `未知参数：${arg}`;
+    } else {
+      takeFilePath(arg);
     }
   }
-  return { help, dir };
+  return { help, version, dir, filePath, error };
 }
 
-export function main(): void {
-  const args = parseArgs(process.argv.slice(2));
+export function main(argv = process.argv.slice(2)): void {
+  const args = parseArgs(argv);
+  if (args.error) {
+    console.error(args.error);
+    console.error("");
+    console.error(usage());
+    process.exitCode = 1;
+    return;
+  }
+  if (args.version) {
+    console.log(`mojian ${getPackageVersion()}`);
+    return;
+  }
   if (args.help) {
     console.log(usage());
     return;
   }
-  new WriterTui(args.dir).run();
+  const tui = args.filePath
+    ? new WriterTui({ filePath: args.filePath, showStartupHelp: true })
+    : new WriterTui({ library: args.dir, showStartupHelp: true });
+  tui.run();
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
