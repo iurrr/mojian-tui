@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+*.log
+*.tgz
+.DS_Store
+
+# Local writing drafts and app state created while running the TUI.
+/*.txt
+/drafts/
+**/.mojian-state.json
+*.mojian.json
+
+# Existing local demo page unrelated to the TUI package.
+/index.html
