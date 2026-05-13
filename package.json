@@ -2,13 +2,12 @@
   "name": "mojian-tui",
   "version": "1.0.0",
   "description": "A dependency-free terminal writing app with a TUI interface.",
-  "private": true,
   "type": "module",
   "bin": {
-    "mojian": "./bin/mojian"
+    "mojian": "dist/cli.js"
   },
   "files": [
-    "bin/",
+    "dist/",
     "src/",
     "docs/",
     "README.md",
@@ -16,14 +15,25 @@
     "CHANGELOG.md"
   ],
   "scripts": {
+    "build": "node scripts/build.js",
     "start": "node src/main.ts",
     "check": "node --check src/main.ts",
     "test": "node test/writer_tui.test.ts",
-    "ci": "npm run check && npm test"
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run ci",
+    "ci": "npm run check && npm test && npm run build && node --check dist/main.js"
   },
   "engines": {
     "node": ">=24"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iurrr/mojian-tui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iurrr/mojian-tui/issues"
+  },
+  "homepage": "https://github.com/iurrr/mojian-tui#readme",
   "keywords": [
     "tui",
     "writing",

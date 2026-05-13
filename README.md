@@ -24,24 +24,24 @@
 
 ## 安装
 
-Linux ARM64 用户可以在 [Releases](https://github.com/iurrr/mojian-tui/releases) 下载 `.deb` 安装包：
+使用 npm 全局安装：
 
 ```bash
-sudo apt install ./mojian_1.0.0_arm64.deb
+npm install -g mojian-tui
 ```
 
 安装后即可使用 `mojian` 命令。
 
-也可以从源码运行。克隆项目后，在项目目录执行：
+也可以临时运行：
+
+```bash
+npm exec --package=mojian-tui -- mojian
+```
+
+或者从源码运行。克隆项目后，在项目目录执行：
 
 ```bash
 npm start
-```
-
-如果希望像普通终端程序一样输入 `mojian` 打开，可以在项目目录安装到本机：
-
-```bash
-npm install -g .
 ```
 
 ## 使用

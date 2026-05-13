@@ -1,4 +1,4 @@
-# Publishing To GitHub
+# Publishing
 
 ## 准备
 
@@ -9,13 +9,19 @@ npm run ci
 npm pack --dry-run
 ```
 
+确认 npm 登录状态：
+
+```bash
+npm whoami
+```
+
 ## 初始化 Git 仓库
 
 当前目录如果还不是有效 Git 仓库，执行：
 
 ```bash
 git init
-git add README.md LICENSE CHANGELOG.md package.json .gitignore bin src test docs .github
+git add README.md LICENSE CHANGELOG.md package.json .gitignore scripts src test docs .github
 git commit -m "Initial release"
 ```
 
@@ -29,35 +35,34 @@ git commit -m "Initial release"
 
 ```bash
 git branch -M main
-git remote add origin https://github.com/<your-name>/mojian-tui.git
+git remote add origin https://github.com/iurrr/mojian-tui.git
 git push -u origin main
 ```
 
-把 `<your-name>` 替换为你的 GitHub 用户名或组织名。
+## 发布到 npm
 
-## 创建 Release
+本项目的主发布渠道是 npm。发布前确认 `package.json` 中的 `version` 是目标版本，然后执行：
 
-推送后可以在 GitHub 页面进入 `Releases`，创建 `v1.0.0`：
+```bash
+npm publish --access public
+```
+
+发布后用户可以安装：
+
+```bash
+npm install -g mojian-tui
+```
+
+## 创建 GitHub Release
+
+推送后可以在 GitHub 页面进入 `Releases`，创建同版本 Release，例如 `v1.0.0`：
 
 - Tag: `v1.0.0`
 - Title: `墨笺 TUI 1.0.0`
 - Notes: 可以复制 `CHANGELOG.md` 中的 `1.0.0` 内容
 
-`.deb`、裸二进制等构建产物不要提交到 Git 仓库；将它们作为 Release 附件上传。例如当前 ARM64 安装包：
+GitHub Release 用于版本说明和可选附件。`.deb`、裸二进制等平台相关构建产物不要提交到 Git 仓库；如果确实要提供，则作为 Release 附件上传。
 
-```bash
-gh release upload v1.0.0 mojian_1.0.0_arm64.deb --repo iurrr/mojian-tui
-```
+## 平台安装包
 
-## 可选：发布到 npm
-
-当前 `package.json` 里设置了 `"private": true`，用于避免误发布。将来如果要发布到 npm：
-
-1. 删除 `"private": true`
-2. 补充 `repository`、`bugs`、`homepage` 字段
-3. 登录并发布：
-
-```bash
-npm login
-npm publish
-```
+`.deb`、`.rpm`、`.pkg`、`.exe` 等平台安装包需要分别构建和维护。除非有明确用户需求，否则优先维护 npm 发布流程。
